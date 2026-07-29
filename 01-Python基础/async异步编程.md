@@ -80,7 +80,7 @@ async def main() -> None:
     async with httpx.AsyncClient(timeout=10) as client:   # 异步上下文管理器
         codes = await asyncio.gather(
             fetch(client, "https://example.com"),
-            fetch(client, "https://httpbin.org/get"),
+            fetch(client, "https://httpbingo.org/get"),
         )
         print(codes)
 

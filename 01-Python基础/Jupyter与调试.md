@@ -22,7 +22,7 @@ Notebook 由一个个 cell 组成，背后是一个常驻的 Python 进程（ker
 ```python
 # cell 1
 import httpx
-data = httpx.get("https://httpbin.org/json").json()   # 只需请求一次
+data = httpx.get("https://httpbingo.org/json").json()   # 只需请求一次
 
 # cell 2（反复修改、反复运行，data 一直在内存里）
 data["slideshow"]["title"]     # 值直接显示在 cell 下方
@@ -87,7 +87,7 @@ pdb 常用命令：`n`（下一行）、`s`（步入）、`c`（继续）、`p t
 
 ## 动手任务
 
-1. 在 `E:\workspace\AiStudy\phase0-python\` 下执行 `uv add --dev ipykernel`，创建 `experiment.ipynb`：cell 1 用 httpx 请求 `https://httpbin.org/json` 存入变量；cell 2、3 分别对该变量做不同处理，体会「请求一次、反复实验」；最后 Restart + Run All 验证可复现。
+1. 在 `E:\workspace\AiStudy\phase0-python\` 下执行 `uv add --dev ipykernel`，创建 `experiment.ipynb`：cell 1 用 httpx 请求 `https://httpbingo.org/json` 存入变量；cell 2、3 分别对该变量做不同处理，体会「请求一次、反复实验」；最后 Restart + Run All 验证可复现。
 2. 写 `E:\workspace\AiStudy\phase0-python\debug_practice.py`：实现一个故意有 bug 的函数（如对 `[3, 1, 4, 1, 5]` 求最大值但初始值写成 `0` 且列表可能全为负数），用 VS Code 断点单步定位 bug，修复后在注释里记录定位过程。
 3. 把任务 1 notebook 中的处理逻辑抽成函数，移入 `E:\workspace\AiStudy\phase0-python\explore_utils.py`（带类型注解），notebook 改为 import 调用——演练一遍「notebook 实验 → 沉淀为模块」的完整流程。
 
