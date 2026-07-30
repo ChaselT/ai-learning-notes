@@ -55,8 +55,27 @@ ollama list          # 应该能看到 qwq —— 证明旧模型目录被正确
 | 变量 | 作用 | 建议值 |
 |------|------|--------|
 | `OLLAMA_KEEP_ALIVE` | 模型在显存里驻留多久后卸载 | `30m`（频繁调试时避免反复加载 17 GB） |
-| `OLLAMA_HOST` | 监听地址 | 默认 `127.0.0.1:11434`；只有要从别的机器访问才改 |
+| `OLLAMA_HOST` | **服务端监听地址 + 客户端连接地址（同一个变量！）** | **必须 `127.0.0.1:11434`**，见下方坑 |
 | `OLLAMA_NUM_PARALLEL` | 并发处理请求数 | 默认较小，**并发调用会排队**——学 async 并发时留意这点 |
+
+### 3. ⚠️ OLLAMA_HOST 千万别设 0.0.0.0（本机踩过，2026-07-30）
+
+本机原本设了 `OLLAMA_HOST=0.0.0.0`（为局域网访问），结果安装后 `ollama list` / `ollama --version` 全部报错：
+
+```
+Error: something went wrong, please see the ollama server logs for details
+Warning: could not connect to a running Ollama instance
+```
+
+**根因**：`OLLAMA_HOST` 被服务端和客户端**共用**——`0.0.0.0` 作为"监听所有网卡"没问题，但客户端拿它当**连接目标**时是无效地址。服务其实一直健康（日志里 `Listening on [::]:11434`、GPU 识别正常、模型也在），只有 CLI 连不上，所以报错极具迷惑性。
+
+**已固化为 `OLLAMA_HOST=127.0.0.1:11434`**。若将来真需要局域网访问，用托盘应用的设置面板开"暴露到网络"，别再用全局环境变量。
+
+**排查心法**：CLI 报错但 API 通 → 问题在客户端配置，不在服务。用这条命令区分二者：
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:11434/api/tags"   # 通 = 服务没病
+```
 
 ## 四、模型管理
 
@@ -119,7 +138,8 @@ uv run python -c "from openai import OpenAI; c=OpenAI(base_url='http://localhost
 
 | 症状 | 大概率原因 | 处理 |
 |------|-----------|------|
-| Python 连不上 `localhost:11434` | **SOCKS 代理劫持**（本机头号坑） | 配 `NO_PROXY=localhost,127.0.0.1`，重开终端 |
+| `ollama list` 报 something went wrong<br>但服务日志正常 | **`OLLAMA_HOST=0.0.0.0`**（本机真实踩过） | 改成 `127.0.0.1:11434`，见上方第 3 条 |
+| Python 连不上 `localhost:11434` | SOCKS 代理劫持 | 已配 `NO_PROXY=localhost,127.0.0.1,::1`（用户级），重开终端生效 |
 | `ollama` 命令找不到 | 终端是安装前开的 | 新开 PowerShell |
 | `ollama list` 是空的 | `OLLAMA_MODELS` 未生效 | 检查环境变量 + 重启 Ollama 服务 |
 | 拉模型极慢/中断 | 网络 | 断点续传：重跑 `ollama pull` 即可 |
