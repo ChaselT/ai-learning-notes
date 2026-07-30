@@ -39,7 +39,7 @@ def img_to_data_url(path: str) -> str:
     return f"data:image/{'jpeg' if ext == 'jpg' else ext};base64,{b64}"
 
 resp = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5.6-terra",     # 2026-07 主流：gpt-5.6-sol/terra/luna 三档全支持视觉
     messages=[{
         "role": "user",
         "content": [
@@ -59,17 +59,18 @@ print(resp.choices[0].message.content)
 - 大图会被服务端缩放，也按 token 计费（一张图几百到上千 token，见 [[Token与上下文窗口]]）
 - 传前把图压缩到 2000px 以内可省钱提速；截图类内容保证文字清晰即可
 
-### 3. Qwen-VL（阿里云端）示例
+### 3. 通义千问（阿里云端）示例
 
 同样的 openai SDK，换 base_url 和 model 即可：
 
 ```python
 client = OpenAI(
     api_key=os.environ["DASHSCOPE_API_KEY"],
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    # 百炼兼容模式端点，WorkspaceId 在控制台取；老的 dashscope.aliyuncs.com 域名仍在服务但已非文档主推
+    base_url=f"https://{os.environ['DASHSCOPE_WORKSPACE_ID']}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
 )
 resp = client.chat.completions.create(
-    model="qwen-vl-plus",   # 或 qwen-vl-max
+    model="qwen3.7-plus",   # 2026 起通义把视觉能力并进了主力模型，不再有独立的 qwen-vl-* 系列
     messages=[{
         "role": "user",
         "content": [
@@ -82,16 +83,20 @@ resp = client.chat.completions.create(
 print(resp.choices[0].message.content)
 ```
 
-### 4. 本地跑 Qwen2.5-VL 的可行性（22G 显存）
+### 4. 本地跑视觉模型的可行性（22G 显存）
 
-结论：**完全可行**。参考显存占用（Q4 量化 + 中等分辨率图）：
+结论：**完全可行，而且 2026 年你甚至不用单独装 VL 模型**——`qwen3.5:27b` 这一代主力模型已经原生吃图，文本和视觉是同一个模型。
 
-| 型号 | 显存需求 | 你的 22G |
+| Ollama tag | 下载体积 | 你的 22G |
 |---|---|---|
-| Qwen2.5-VL-7B (Q4) | 约 7~9 GB | 轻松，日常主力 |
-| Qwen2.5-VL-32B (Q4) | 约 20+ GB | 贴边，小分辨率可尝试 |
+| `qwen3.5:27b` | 17 GB | **首选**：一个模型同时管文本和看图，256K 上下文 |
+| `qwen3-vl:8b` | 6.1 GB | 轻量看图专用，留显存给别的进程 |
+| `qwen3-vl:30b` | 20 GB | 更强看图，贴边能跑 |
+| `qwen3-vl:32b` | 21 GB | 极限贴边，KV cache 几乎没余量，不推荐 |
 
-Ollama 已收录（`ollama pull qwen2.5vl:7b`），API 调用方式与上面完全一致，base_url 换成 `http://localhost:11434/v1`（见 [[Ollama本地模型]]）。图片越大、越多，激活占用越高——本地跑建议先压缩图片。7B 级 VLM 的 OCR 与常规问答已可用，复杂图表推理与云端旗舰仍有差距，开发调试用本地、生产关键路径用云端是合理组合。
+API 调用方式与上面完全一致，base_url 换成 `http://localhost:11434/v1`（见 [[Ollama本地模型]]）。注意 qwen3-vl 系列**要求 Ollama ≥ 0.12.7**，老版本拉下来会跑不起来。
+
+图片越大、越多，激活占用越高——本地跑建议先压缩图片。8B 级 VLM 的 OCR 与常规问答已可用，复杂图表推理与云端旗舰仍有差距；开发调试用本地、生产关键路径用云端，是合理组合。
 
 ### 5. 工程实践要点
 
@@ -103,9 +108,9 @@ Ollama 已收录（`ollama pull qwen2.5vl:7b`），API 调用方式与上面完�
 
 ## 动手任务
 
-1. 写 `E:\workspace\AiStudy\phase1-llm-api\ex09_vision_basic.py`：截一张你 IDE 的报错图，让 qwen-vl-plus（或本地 qwen2.5vl:7b）分析报错原因
-2. 写 `E:\workspace\AiStudy\phase1-llm-api\ex09_ocr_json.py`：找一张购物小票/发票照片，OCR 后用 pydantic 模型校验输出（复用 [[结构化输出]] 的重试函数）
-3. 对比实验：同一张图表图片分别发给云端 qwen-vl-max 和本地 qwen2.5vl:7b，对比数据提取准确度，记录结论到脚本注释
+1. 写 `E:\workspace\AiStudy\phase1-llm-api\ex09_vision_basic.py`：截一张你 IDE 的报错图，让本地 `qwen3.5:27b`（或云端 `qwen3.7-plus`）分析报错原因
+2. 写 `E:\workspace\AiStudy\phase1-llm-api\ex09_ocr_json.py`：找一张购物小票/发票照片，OCR 后用 pydantic 模型校验输出（复用 [[结构化输出]] 的重试函数），金额字段额外做一次正则/区间校验
+3. 对比实验：同一张图表图片分别发给云端模型和本地模型，对比数据提取准确度；再把同一张图压缩到 1000px 和保持原图各跑一次，对比 `usage.prompt_tokens` 的差距，体会"图片很贵"。结论记录到脚本注释
 
 ## 相关笔记
 

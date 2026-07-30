@@ -30,8 +30,8 @@ import json, os
 from openai import OpenAI
 
 client = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"],
-                base_url="https://api.deepseek.com/v1")
-MODEL = "deepseek-chat"
+                base_url="https://api.deepseek.com")
+MODEL = os.environ.get("LLM_MODEL", "deepseek-v4-flash")
 
 # --- 本地函数（真实项目里是查API/查库） ---
 def get_weather(city: str) -> str:
@@ -86,7 +86,9 @@ print(run("北京和上海现在天气怎么样？温度差几度？"))
 - `function.arguments` 是 **JSON 字符串**，要 `json.loads`；模型可能给出不合法参数，执行前应校验（可用 pydantic，见 [[结构化输出]]）
 - `description` 写得越清楚，模型选工具、填参数越准——这是 prompt 工程的一部分（见 [[Prompt工程]]）
 - 工具执行抛异常时，把错误信息作为 tool 结果回传（"查询失败：超时"），让模型向用户解释，别让整个请求 500
-- 决策要稳定，temperature 用 0~0.3（见 [[采样参数详解]]）
+- 决策要稳定，temperature 用 0~0.3（见 [[采样参数详解]]）；注意部分 2026 年的推理型模型已移除 temperature，此时靠 prompt 和 schema 约束
+- **重试 ≠ 无害**：普通对话调用失败了随便重试，但工具循环里如果工具有副作用（下单、发邮件、写库），重试整个循环可能导致**重复执行**。副作用型工具要么自己做幂等（带 request_id），要么在这一层就不重试，只把错误回传给模型
+- 循环里的每一轮都是一次完整 API 调用，都会重发全部历史——**5 轮工具调用的成本远高于一次普通问答**，[[Token与上下文窗口]] 的成本曲线在这里体现得最明显
 
 ### 4. 并行工具调用
 

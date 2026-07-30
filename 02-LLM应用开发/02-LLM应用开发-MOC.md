@@ -8,7 +8,9 @@ created: 2026-07-24
 > 本阶段目标：从"会调 HTTP 接口的 Java 工程师"变成"能独立开发 LLM 应用的 AI 工程师"。
 > 所有代码写到 `E:\workspace\AiStudy\phase1-llm-api\` 下。
 >
-> 本地硬件基线：RTX 2080 Ti 22GB 显存 + 64GB 内存，可流畅本地跑 Qwen2.5-14B（Q4）。
+> 本地硬件基线：RTX 2080 Ti 22GB 显存 + 64GB 内存，可流畅本地跑 Qwen3.5-27B（Q4，17GB，且原生支持看图）。
+>
+> 模型名和价格更新很快（本文按 **2026-07** 校对过一遍）。代码里一律用环境变量 `LLM_MODEL`/`LLM_BASE_URL` 控制，别写死——这样模型换代时改 `.env` 就行。
 
 ## 学习顺序
 
@@ -24,8 +26,8 @@ created: 2026-07-24
 | 6 | [[Prompt工程]] | 把 prompt 当代码写：system prompt、few-shot、CoT、可套用模板 |
 | 7 | [[结构化输出]] | 让 LLM 输出可被程序消费的 JSON：response_format + pydantic 校验 |
 | 8 | [[Function Calling]] | 让 LLM 调用你的函数：工具调用完整闭环，Agent 的基石 |
-| 9 | [[多模态视觉API]] | 给模型传图片：OCR、截图分析、图表理解，本地 Qwen2.5-VL 可行性 |
-| 10 | [[Ollama本地模型]] | 22G 显存跑 qwen2.5:14b：本地开发零成本，OpenAI 兼容 API |
+| 9 | [[多模态视觉API]] | 给模型传图片：OCR、截图分析、图表理解，本地视觉模型可行性 |
+| 10 | [[Ollama本地模型]] | 22G 显存跑 qwen3.5:27b：本地开发零成本，OpenAI 兼容 API |
 | 11 | [[FastAPI入门]] | Python 版 Spring Boot：把你的 LLM 能力包装成 HTTP 服务 |
 
 ## 项目①：CLI 智能助手
@@ -40,7 +42,8 @@ created: 2026-07-24
    - `get_current_time`：查询当前时间
    - `calculator`：数学计算（安全求值，不要裸 `eval`）
    - `read_file` / `search_web`：读本地文件或联网搜索（任选其一）
-4. **可切换后端**：通过环境变量在 DeepSeek/Qwen 云端 API 与本地 Ollama 之间切换
+4. **可切换后端**：通过环境变量在 DeepSeek/Qwen 云端 API 与本地 Ollama 之间切换（`LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` 三件套，模型名不许硬编码）
+5. **健壮性**：超时和重试配置齐全，429/超时/5xx 有区分处理，密钥走 `.env`，`/cost` 命令能打印本次会话累计 token 与估算花费
 
 **加分项：** 上下文超长时自动摘要压缩；工具并行调用；对话历史持久化到 JSON 文件。
 
@@ -65,10 +68,11 @@ E:\workspace\AiStudy\phase1-llm-api\
 开始学习前把环境搭好，避免中途反复折腾：
 
 - [ ] 用 uv 初始化项目（与阶段 0 一致，见 [[uv与项目管理]]）：在 `phase1-llm-api` 下 `uv init .`
-- [ ] 基础依赖：`uv add openai tiktoken pydantic python-dotenv "fastapi[standard]" "httpx[socks]"`（本机有 SOCKS 代理，httpx 需 socks 支持）
-- [ ] 注册 DeepSeek 开放平台（充 10 元够用整个阶段），API key 存入环境变量 `DEEPSEEK_API_KEY`
-- [ ] 安装 Ollama，设置 `OLLAMA_MODELS` 到大容量盘，拉取 `qwen2.5:14b`（详见 [[Ollama本地模型]]）
-- [ ] 建好项目目录 `E:\workspace\AiStudy\phase1-llm-api\`，初始化 git，`.env` 加入 `.gitignore`
+- [ ] 基础依赖：`uv add openai tiktoken pydantic python-dotenv "fastapi[standard]" "httpx[socks]"`（**本机有 SOCKS 代理，httpx 必须带 socks extra**，否则一律连接失败）
+- [ ] 注册 DeepSeek 开放平台（充 10 元够用整个阶段），API key 存入环境变量 `DEEPSEEK_API_KEY`；当前模型为 `deepseek-v4-flash`（便宜档）/ `deepseek-v4-pro`（推理档），base_url 为 `https://api.deepseek.com`
+- [ ] 安装 Ollama（v0.32+），设置 `OLLAMA_MODELS` 到大容量盘，拉取 `qwen3.5:27b`（17GB，详见 [[Ollama本地模型]]）
+- [ ] 设 `NO_PROXY=localhost,127.0.0.1`，否则本地 Ollama 请求会被代理拦掉
+- [ ] 建好项目目录 `E:\workspace\AiStudy\phase1-llm-api\`，初始化 git，**先写 `.gitignore`（含 `.env`）再写代码**——密钥一旦进过 git 历史，光删文件是洗不掉的
 
 ## 学习节奏建议
 
@@ -88,7 +92,9 @@ E:\workspace\AiStudy\phase1-llm-api\
 
 - **Q: 没有 OpenAI 账号影响学习吗？** 不影响。全程可用 DeepSeek（便宜）+ 本地 Ollama（免费），接口完全兼容，笔记示例改 base_url 即可
 - **Q: 需要先学深度学习/PyTorch 吗？** 本阶段不需要。应用层开发只依赖 API 调用能力，原理层面 [[大语言模型工作原理速览]] 的深度已经够用
-- **Q: Java 背景最容易踩的坑？** 忘记 API 是无状态的（历史要自己带）、在 async 路由里写阻塞调用、拿字符串拼 JSON 而不用 pydantic
+- **Q: Java 背景最容易踩的坑？** 忘记 API 是无状态的（历史要自己带）、在 async 路由里写阻塞调用、拿字符串拼 JSON 而不用 pydantic、把 LLM 调用当成"一定会成功的本地方法调"（它会 429、会超时、会输出脏 JSON）
+- **Q: 笔记里的模型名过时了怎么办？** 大概率会——2026 年模型半年一代。看到 404 `model not found` 时去供应商文档翻当前模型列表，改 `.env` 里的 `LLM_MODEL` 即可，代码不用动。这也是笔记坚持"模型名走环境变量"的原因
+- **Q: 会不会不小心刷爆额度？** 学习阶段风险很低（DeepSeek 充 10 元能跑几百万 token），但要养成三个习惯：`max_tokens` 兜底、工具调用循环设最大轮数、把 `usage` 打进日志。密钥进 `.gitignore` 是底线——泄漏才是真正会烧钱的场景
 
 ## 阶段验收标准
 
@@ -98,7 +104,8 @@ E:\workspace\AiStudy\phase1-llm-api\
 - [ ] 能不看笔记写出一个带流式输出的多轮对话脚本
 - [ ] 能定义 tools schema 并跑通"模型请求调用 → 执行函数 → 回传结果"完整闭环
 - [ ] 能用 pydantic 校验 LLM 的 JSON 输出，并实现失败重试
-- [ ] 本地 Ollama 跑通 qwen2.5:14b，并用 openai SDK 连接它
+- [ ] 能说清 429/超时/5xx 各自该不该重试，并写出带超时+重试+降级的调用封装
+- [ ] 本地 Ollama 跑通 qwen3.5:27b，并用 openai SDK 连接它
 - [ ] 用 FastAPI 写出一个 SSE 流式聊天接口，能用 curl 验证
 - [ ] 项目①完成并通过自测
 - [ ] **通过 [[阶段1测试]]（笔试+实操，Claude 批改 ≥80 分）——这是进入阶段 2 的硬门槛**

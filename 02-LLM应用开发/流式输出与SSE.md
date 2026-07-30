@@ -38,10 +38,10 @@ import os
 from openai import OpenAI
 
 client = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"],
-                base_url="https://api.deepseek.com/v1")
+                base_url="https://api.deepseek.com")
 
 stream = client.chat.completions.create(
-    model="deepseek-chat",
+    model="deepseek-v4-flash",
     messages=[{"role": "user", "content": "写一首关于程序员的五言绝句"}],
     stream=True,
 )
@@ -72,11 +72,11 @@ import asyncio, os
 from openai import AsyncOpenAI
 
 client = AsyncOpenAI(api_key=os.environ["DEEPSEEK_API_KEY"],
-                     base_url="https://api.deepseek.com/v1")
+                     base_url="https://api.deepseek.com")
 
 async def main() -> None:
     stream = await client.chat.completions.create(
-        model="deepseek-chat",
+        model="deepseek-v4-flash",
         messages=[{"role": "user", "content": "一句话介绍SSE"}],
         stream=True,
     )
@@ -93,7 +93,21 @@ FastAPI 中把这个 async generator 接到 `StreamingResponse` 上，就是一�
 
 ### 5. 流式的工程代价
 
-- 错误处理更麻烦：非流式失败就是一个异常，流式可能"输出一半断了"，要决定重试策略（整体重来？把已收内容拼进 prompt 续写？）
+- 错误处理更麻烦：非流式失败就是一个异常，流式可能"输出一半断了"，要决定重试策略（整体重来？把已收内容拼进 prompt 续写？）。**`try` 必须包住整个 `for chunk in stream` 循环**，而不只是 `create()` 那一行——网络断在中途时异常是在迭代过程中抛出的：
+
+```python
+import openai   # 异常类在顶层，from openai import OpenAI 不会带进来
+
+buf = []
+try:
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            buf.append(delta); print(delta, end="", flush=True)
+except openai.APIConnectionError:
+    print(f"\n[流中断，已收到 {len(''.join(buf))} 字，可选择重试或用已有内容降级]")
+```
+
 - 结构化输出与流式天然冲突：JSON 没收完就是不合法的（见 [[结构化输出]]）
 - 中间层（Nginx 等）需关闭响应缓冲（`X-Accel-Buffering: no`），否则流被攒成一坨一次性吐出，流式白做
 - 内容审核变难：不良内容可能已经流给用户才被识别，严格场景需逐段审核或放弃流式

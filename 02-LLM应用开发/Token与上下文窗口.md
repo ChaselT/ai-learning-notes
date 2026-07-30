@@ -29,9 +29,12 @@ Token 是 LLM 的最小处理单位，类比 JVM 的字节码指令：你写的�
 
 | 模型 | 窗口大小 |
 |---|---|
-| GPT-4o | 128K |
-| DeepSeek-V3 | 64K / 128K |
-| Qwen2.5-14B | 128K（Ollama 默认只开 2K~8K，需调 `num_ctx`） |
+| gpt-5.6 系列（Sol/Terra/Luna） | 1M |
+| claude-sonnet-5 / claude-opus-5 | 1M |
+| deepseek-v4-flash / v4-pro | 128K 级 |
+| Qwen3.5-27B（本地） | 256K（Ollama 默认只开 4K 左右，需调 `num_ctx`） |
+
+2026 年主流窗口已经普遍拉到 128K~1M。但窗口大**不等于**该往里塞：输入是要花钱的，而且下一条"lost in the middle"的问题依然存在。
 
 超窗口的表现：要么 API 直接报错，要么框架静默截断最早的消息——后者更危险，表现为"模型突然忘了开头说的话"。这是多轮对话应用最常见的线上问题。
 
@@ -57,24 +60,27 @@ def trim_history(messages: list[dict], max_messages: int = 20) -> list[dict]:
 
 ### 5. 用 tiktoken 数 token
 
-`pip install tiktoken`（OpenAI 官方 tokenizer 库，其他家模型分词器不同但数量级一致，估算够用）：
+`uv add tiktoken`（OpenAI 官方 tokenizer 库，其他家模型分词器不同但数量级一致，估算够用）：
 
 ```python
 import tiktoken
 
-enc = tiktoken.get_encoding("cl100k_base")  # GPT-4 系列使用的编码
+enc = tiktoken.get_encoding("o200k_base")   # GPT-4o 之后（含 gpt-5.x）使用的编码
+# 老模型（GPT-3.5/GPT-4）是 cl100k_base；不确定时用 encoding_for_model 让它自己选
 
 for text in ["Hello world", "internationalization", "你好，世界", "面向对象编程"]:
     tokens = enc.encode(text)
     print(f"{text!r:30} -> {len(tokens)} tokens: {tokens}")
 
-# 估算一次请求的输入成本
+# 估算一次请求的输入成本（按 deepseek-v4-flash 输入 $0.14/百万 token）
 history = "…拼接全部对话历史…"
 n = len(enc.encode(history))
-print(f"输入约 {n} tokens, 按 ¥2/百万token 约 ¥{n / 1_000_000 * 2:.6f}")
+print(f"输入约 {n} tokens, 约 ${n / 1_000_000 * 0.14:.6f}")
 ```
 
-非 OpenAI 模型想精确计数，用各家的 tokenizer（如 HuggingFace `AutoTokenizer.from_pretrained("Qwen/Qwen2.5-14B-Instruct")`），或直接看 API 响应里的 `usage` 字段（最准，因为是服务端实际计的数）：
+注意 `tiktoken.encoding_for_model("gpt-5.6-terra")` 对**刚发布的新模型名**可能抛 `KeyError`（tiktoken 的模型映射表更新滞后于 API）。稳妥写法是直接 `get_encoding("o200k_base")`，或者 try/except 兜底。
+
+非 OpenAI 模型想精确计数，用各家的 tokenizer（如 HuggingFace `AutoTokenizer.from_pretrained("Qwen/Qwen3.5-27B")`），或直接看 API 响应里的 `usage` 字段（最准，因为是服务端实际计的数）：
 
 ```python
 resp = client.chat.completions.create(...)
@@ -89,7 +95,7 @@ print(resp.usage)  # prompt_tokens / completion_tokens / total_tokens
 - few-shot 示例挑最短的有效版本，别贴长文档原文
 - 让模型"只输出结果不解释"（输出更贵）
 - 参考资料先做检索筛选，只塞相关段落而非整篇文档（RAG 的动机之一）
-- 供应商的 prompt caching（前缀缓存）能对重复前缀打折，长 system prompt 场景收益明显
+- 供应商的 prompt caching（前缀缓存）能对重复前缀打折，长 system prompt 场景收益明显。DeepSeek 是**自动命中**的：缓存命中的输入 token 只要 $0.0028/百万（未命中 $0.14），差 50 倍。命中条件是**前缀逐字节相同**——所以别在 system prompt 里插当前时间戳、随机 ID，也别每轮重排 messages 顺序，否则缓存永远命不中
 
 ### 6. Java 工程师视角的类比总结
 

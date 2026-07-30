@@ -24,8 +24,10 @@ FastAPI 是 Python 生态里最主流的 Web 框架，AI 服务的事实标准�
 
 ### 2. 最小应用 + pydantic 入参校验
 
+当前版本基线（2026-07）：FastAPI 已经完全切到 **pydantic v2**（要求 `pydantic >= 2.7`，内部不再有 `pydantic.v1` 兼容导入），底层 Starlette 到了 1.0。你在阶段 0 学的 pydantic v2 写法（`model_validate` / `model_dump` / `Field`）在这里直接可用；网上搜到 `.dict()`、`.parse_obj()`、`@validator` 的老教程是 v1 语法，别抄。
+
 ```python
-# pip install "fastapi[standard]" openai
+# uv add "fastapi[standard]" openai "httpx[socks]"
 # main.py
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -76,7 +78,7 @@ def get_llm_client() -> AsyncOpenAI:
 async def chat2(req: ChatRequest,
                 client: AsyncOpenAI = Depends(get_llm_client)) -> dict:
     resp = await client.chat.completions.create(
-        model=os.environ.get("LLM_MODEL", "qwen2.5:14b"),
+        model=os.environ.get("LLM_MODEL", "qwen3.5:27b"),
         messages=[{"role": "user", "content": req.message}],
         temperature=req.temperature,
     )
@@ -97,7 +99,7 @@ async def chat_stream(req: ChatRequest,
                       client: AsyncOpenAI = Depends(get_llm_client)):
     async def event_gen():
         stream = await client.chat.completions.create(
-            model=os.environ.get("LLM_MODEL", "qwen2.5:14b"),
+            model=os.environ.get("LLM_MODEL", "qwen3.5:27b"),
             messages=[{"role": "user", "content": req.message}],
             stream=True,
         )
@@ -118,7 +120,57 @@ curl -N -X POST http://localhost:8000/chat/stream -H "Content-Type: application/
 
 注意：路由函数用 `async def` + `AsyncOpenAI`，一个 worker 就能扛住大量并发挂起的流（前置知识：[[async异步编程]]）；同步写法会阻塞事件循环，是 FastAPI 最经典的性能事故。
 
-### 5. 项目组织建议
+### 5. 错误处理与并发调用
+
+**把上游异常翻译成合适的 HTTP 状态码**，别让 openai 的异常裸奔成 500（类比 Spring 的 `@ControllerAdvice`）：
+
+```python
+import openai
+from fastapi import HTTPException
+
+@app.post("/chat3")
+async def chat3(req: ChatRequest,
+                client: AsyncOpenAI = Depends(get_llm_client)) -> dict:
+    try:
+        resp = await client.chat.completions.create(
+            model=os.environ.get("LLM_MODEL", "qwen3.5:27b"),
+            messages=[{"role": "user", "content": req.message}],
+        )
+    except openai.RateLimitError:
+        raise HTTPException(status_code=429, detail="上游限流，请稍后重试")
+    except openai.APITimeoutError:
+        raise HTTPException(status_code=504, detail="模型响应超时")
+    except openai.APIStatusError as e:
+        raise HTTPException(status_code=502, detail=f"上游异常: {e.status_code}")
+    return {"reply": resp.choices[0].message.content}
+```
+
+**异步并发调用 LLM 的三个坑**（前置知识：[[async异步编程]]）：
+
+1. **必须用 `AsyncOpenAI`**。在 `async def` 路由里调同步 `OpenAI` 客户端，会把整个事件循环卡死几十秒——所有其他请求一起挂。这是 FastAPI + LLM 最经典的性能事故。真要用同步库，路由写成普通 `def`（FastAPI 会丢到线程池），或者 `await asyncio.to_thread(...)`
+2. **并发要限流**。`asyncio.gather` 一次开 100 个请求，云端直接返回一片 429。用 `asyncio.Semaphore` 压住并发数：
+
+```python
+import asyncio, os
+
+MODEL = os.environ.get("LLM_MODEL", "qwen3.5:27b")
+sem = asyncio.Semaphore(5)          # 同时最多 5 个在飞
+
+async def ask(client, text: str) -> str:
+    async with sem:
+        resp = await client.chat.completions.create(
+            model=MODEL, messages=[{"role": "user", "content": text}])
+        return resp.choices[0].message.content
+
+results = await asyncio.gather(*[ask(client, t) for t in texts],
+                              return_exceptions=True)   # 一个失败不炸全场
+```
+
+3. **`gather` 默认一个失败全抛**。加 `return_exceptions=True` 让失败的那条以异常对象的形式返回，其余结果照常拿到，再单独重试失败项。
+
+本地 Ollama 还有个额外限制：它**默认串行处理请求**，并发发 10 个不会真的并行，只是排队。想并行要调 `OLLAMA_NUM_PARALLEL`，但显存也会跟着涨。
+
+### 6. 项目组织建议
 
 ```text
 E:\workspace\AiStudy\phase1-llm-api\chat_service\
