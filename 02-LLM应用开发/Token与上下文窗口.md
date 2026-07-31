@@ -109,8 +109,9 @@ print(resp.usage)  # prompt_tokens / completion_tokens / total_tokens
 
 ## 动手任务
 
-1. 写 `E:\workspace\AiStudy\phase1-llm-api\ex02_token_count.py`：用 tiktoken 对比同一段意思的中英文文本（各约 200 字/词）的 token 数，验证"中文吃 token"；顺带试试代码片段、emoji、生僻字的 token 数，建立直觉
-2. 写 `E:\workspace\AiStudy\phase1-llm-api\ex02_usage_watch.py`：连续进行 5 轮对话，每轮打印 `resp.usage.prompt_tokens`，观察输入 token 随轮次线性增长
+1. 写 `E:\workspace\AiStudy\phase1-llm-api\ex02_token_count.py`：用 tiktoken 对比**同一段意思**的中英文文本（翻译对，各约 200 字/词）的 token 数——**分两个维度统计**：①字符效率（字符/token）②同等语义下的总 token 数，看看哪个维度支持"中文吃 token"、哪个不支持；顺带试试代码片段、emoji、生僻字，建立直觉
+2. ⚠️ **本题与任务 3 需先学完下一课 [[Chat Completions API]]**（messages 数组、role、多轮拼接、client 建法本课均未讲），学完再回头做——
+   写 `E:\workspace\AiStudy\phase1-llm-api\ex02_usage_watch.py`：连续进行 5 轮对话，每轮打印 `resp.usage.prompt_tokens`，观察输入 token 随轮次线性增长
 3. 在上一题基础上实现 `trim_history`（保留 system + 最近 6 条），确认 prompt_tokens 不再无限增长
 
 ## 相关笔记
