@@ -71,6 +71,10 @@ def trim_history(messages: list[dict], max_messages: int = 20) -> list[dict]:
     return system + rest[-max_messages:]
 ```
 
+⚠️ **但按"条数"截断约束不了成本**（2026-07 本机实测）：同样保留 6 条，第 6 轮 `prompt_tokens` 是 1228，第 7 轮变成 3246——因为其中一条回复长达 2248 token。**条数上限 ≠ 成本上限**。生产做法是**按 token 预算截断**：用 tokenizer 从最近往前累加，超预算就停，system 永远保留；单条消息本身就超预算时，还要单独截断或摘要它。
+
+截断的收益与代价也要分开量化：实测 8 轮对话输入 token 省 25%（第 8 轮单轮省 44%，轮次越多省越多），**代价是丢记忆且模型不会告知**——问它"我的第一个问题是什么"，它会忠实回答"它能看到的第一个问题"（实测答成了第 4 轮的问题，而不是说"我不记得"）。
+
 ### 5. 用 tiktoken 数 token
 
 `uv add tiktoken`（OpenAI 官方 tokenizer 库，其他家模型分词器不同但数量级一致，估算够用）：

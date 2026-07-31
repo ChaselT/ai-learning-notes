@@ -73,13 +73,13 @@ print(chat("我叫什么名字？"))   # 能答对，因为历史里有
 
 ### 4. 主流模型与兼容端点
 
-| 供应商 | base_url | 常用模型（2026-07） | 说明 |
-|---|---|---|---|
-| OpenAI | `https://api.openai.com/v1` | gpt-5.6-terra, gpt-5.6-luna | 原生标准；官方新项目主推 Responses API |
-| DeepSeek | `https://api.deepseek.com` | deepseek-v4-flash, deepseek-v4-pro | 便宜量大，国内可用，本阶段主力 |
-| Qwen(阿里百炼) | `https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` | qwen3.7-flash, qwen3.7-plus | 兼容模式端点，WorkspaceId 在控制台取 |
-| Anthropic | 官方是自家 Messages API | claude-sonnet-5, claude-opus-5 | 另有兼容层/网关可转 |
-| Ollama 本地 | `http://localhost:11434/v1` | qwen3.5:27b | 零成本开发，见 [[Ollama本地模型]] |
+| 供应商        | base_url                                                                | 常用模型（2026-07）                      | 说明                         |
+| ---------- | ----------------------------------------------------------------------- | ---------------------------------- | -------------------------- |
+| OpenAI     | `https://api.openai.com/v1`                                             | gpt-5.6-terra, gpt-5.6-luna        | 原生标准；官方新项目主推 Responses API |
+| DeepSeek   | `https://api.deepseek.com`                                              | deepseek-v4-flash, deepseek-v4-pro | 便宜量大，国内可用，本阶段主力            |
+| Qwen(阿里百炼) | `https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` | qwen3.7-flash, qwen3.7-plus        | 兼容模式端点，WorkspaceId 在控制台取   |
+| Anthropic  | 官方是自家 Messages API                                                      | claude-sonnet-5, claude-opus-5     | 另有兼容层/网关可转                 |
+| Ollama 本地  | `http://localhost:11434/v1`                                             | qwen3.5:27b                        | 零成本开发，见 [[Ollama本地模型]]     |
 
 同一份代码，改 `base_url` + `api_key` + `model` 三个值即可切换供应商——开发期用本地 Ollama，上线切云端。
 
