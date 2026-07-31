@@ -119,6 +119,9 @@ async def exec_all(tool_calls) -> list[dict]:
 
 ## 相关笔记
 
+> **本阶段第 8/11 课** | 上一篇：[[结构化输出]] | **下一篇：[[多模态视觉API]]**
+> 学习顺序总表见 [[02-LLM应用开发-MOC]]
+
 - [[02-LLM应用开发-MOC]]
 - [[Chat Completions API]]
 - [[结构化输出]]

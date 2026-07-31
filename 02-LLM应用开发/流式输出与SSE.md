@@ -124,6 +124,9 @@ except openai.APIConnectionError:
 
 ## 相关笔记
 
+> **本阶段第 5/11 课** | 上一篇：[[采样参数详解]] | **下一篇：[[Prompt工程]]**
+> 学习顺序总表见 [[02-LLM应用开发-MOC]]
+
 - [[02-LLM应用开发-MOC]]
 - [[大语言模型工作原理速览]]
 - [[Chat Completions API]]

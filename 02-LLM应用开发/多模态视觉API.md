@@ -114,6 +114,9 @@ API 调用方式与上面完全一致，base_url 换成 `http://localhost:11434/
 
 ## 相关笔记
 
+> **本阶段第 9/11 课** | 上一篇：[[Function Calling]] | **下一篇：[[Ollama本地模型]]**
+> 学习顺序总表见 [[02-LLM应用开发-MOC]]
+
 - [[02-LLM应用开发-MOC]]
 - [[Chat Completions API]]
 - [[结构化输出]]

@@ -188,6 +188,9 @@ E:\workspace\AiStudy\phase1-llm-api\chat_service\
 
 ## 相关笔记
 
+> **本阶段第 11/11 课** | 上一篇：[[Ollama本地模型]] | 全部课程完毕 -> 做**项目①**，然后 [[阶段1测试]]
+> 学习顺序总表见 [[02-LLM应用开发-MOC]]
+
 - [[02-LLM应用开发-MOC]]
 - [[流式输出与SSE]]
 - [[Chat Completions API]]
