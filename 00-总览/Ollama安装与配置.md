@@ -144,6 +144,7 @@ uv run python -c "from openai import OpenAI; c=OpenAI(base_url='http://localhost
 | `ollama list` 是空的 | `OLLAMA_MODELS` 未生效 | 检查环境变量 + 重启 Ollama 服务 |
 | 拉模型极慢/中断 | 网络 | 断点续传：重跑 `ollama pull` 即可 |
 | 加载模型后爆显存 / 极慢 | 模型超出 22 GB，退化到 CPU 推理 | `nvidia-smi` 看占用，换小一号的模型 |
+| **思考完就中断、正文为空** | **默认 num_ctx 仅 4096**（Ollama 按显存自动设），thinking 把窗口吃光 | 调大 `num_ctx`（如 16384）；或关掉 thinking。启动日志里搜 `default_num_ctx` 可确认 |
 | 回答一半卡住 | 上下文超了 KV cache 空间 | 缩短对话历史，或换小模型 |
 | 并发请求变串行 | `OLLAMA_NUM_PARALLEL` 默认值小 | 调大该变量；本地并发能力本就有限，别拿它压测 |
 
