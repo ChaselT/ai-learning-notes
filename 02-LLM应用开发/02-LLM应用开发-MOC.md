@@ -16,19 +16,19 @@ created: 2026-07-24
 
 按以下顺序学习，前后有依赖关系，不建议跳跃：
 
-| 序号 | 笔记 | 一句话简介 |
-|---|---|---|
-| 1 | [[大语言模型工作原理速览]] | 应用工程师视角理解 LLM：next token prediction、幻觉根源、模型命名怎么读 |
-| 2 | [[Token与上下文窗口]] | Token 是 LLM 世界的"字节"：计费单位、窗口限制、上下文管理策略 |
-| 3 | [[Chat Completions API]] | 与 LLM 对话的标准接口：消息角色、多轮对话本质、OpenAI 兼容生态 |
-| 4 | [[采样参数详解]] | temperature/top_p 等参数怎么调：代码生成用低温，创意写作用高温 |
-| 5 | [[流式输出与SSE]] | 为什么 ChatGPT 是一个字一个字蹦出来的：SSE 协议与 stream=True |
-| 6 | [[Prompt工程]] | 把 prompt 当代码写：system prompt、few-shot、CoT、可套用模板 |
-| 7 | [[结构化输出]] | 让 LLM 输出可被程序消费的 JSON：response_format + pydantic 校验 |
-| 8 | [[Function Calling]] | 让 LLM 调用你的函数：工具调用完整闭环，Agent 的基石 |
-| 9 | [[多模态视觉API]] | 给模型传图片：OCR、截图分析、图表理解，本地视觉模型可行性 |
-| 10 | [[Ollama本地模型]] | 22G 显存跑 qwen3.5:27b：本地开发零成本，OpenAI 兼容 API |
-| 11 | [[FastAPI入门]] | Python 版 Spring Boot：把你的 LLM 能力包装成 HTTP 服务 |
+| 序号  | 笔记                       | 一句话简介                                              |
+| --- | ------------------------ | -------------------------------------------------- |
+| 1   | [[大语言模型工作原理速览]]          | 应用工程师视角理解 LLM：next token prediction、幻觉根源、模型命名怎么读   |
+| 2   | [[Token与上下文窗口]]          | Token 是 LLM 世界的"字节"：计费单位、窗口限制、上下文管理策略              |
+| 3   | [[Chat Completions API]] | 与 LLM 对话的标准接口：消息角色、多轮对话本质、OpenAI 兼容生态              |
+| 4   | [[采样参数详解]]               | temperature/top_p 等参数怎么调：代码生成用低温，创意写作用高温           |
+| 5   | [[流式输出与SSE]]             | 为什么 ChatGPT 是一个字一个字蹦出来的：SSE 协议与 stream=True        |
+| 6   | [[Prompt工程]]             | 把 prompt 当代码写：system prompt、few-shot、CoT、可套用模板     |
+| 7   | [[结构化输出]]                | 让 LLM 输出可被程序消费的 JSON：response_format + pydantic 校验 |
+| 8   | [[Function Calling]]     | 让 LLM 调用你的函数：工具调用完整闭环，Agent 的基石                    |
+| 9   | [[多模态视觉API]]             | 给模型传图片：OCR、截图分析、图表理解，本地视觉模型可行性                     |
+| 10  | [[Ollama本地模型]]           | 22G 显存跑 qwen3.5:27b：本地开发零成本，OpenAI 兼容 API          |
+| 11  | [[FastAPI入门]]            | Python 版 Spring Boot：把你的 LLM 能力包装成 HTTP 服务         |
 
 ## 项目①：CLI 智能助手
 
