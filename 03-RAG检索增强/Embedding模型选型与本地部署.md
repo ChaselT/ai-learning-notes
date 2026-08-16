@@ -44,7 +44,8 @@ MTEB（Massive Text Embedding Benchmark）是 embedding 领域的公认榜单，
 | **bge-m3** | 568M | 1024 | 多语言 100+；**同时输出 dense/sparse/多向量三种表示**；开源生产标准 | ⭐ 本阶段主力 |
 | **Qwen3-Embedding** | 0.6B / 4B / 8B | 可变 | 100+ 语言，中英俱强；8B 在 MTEB 得 70.58 | 想要更强、显存够时 |
 | KaLM-Embedding-Gemma3-12B | 12B | — | 2026-07 MMTEB 榜首（72.32） | 太大，本机不划算 |
-| gte-multilingual-base | 305M | 768 | 阿里出品，小而快 | 资源紧张时 |
+| gte-multilingual-base | 305M | 768 | 阿里出品，小而快；**Ollama 上没有，需走 sentence-transformers** | 资源紧张时 |
+| mxbai-embed-large / bge-large / nomic-embed-text | 小 | — | Ollama 可直接 pull，适合当对照组 | 做选型对比时 |
 | NV-Embed-v2 | 7B | 4096 | 英文榜强 | 纯英文场景 |
 
 **本阶段推荐 `bge-m3`**，理由不是它分最高，而是：
