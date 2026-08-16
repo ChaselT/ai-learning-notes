@@ -50,7 +50,7 @@ MTEB（Massive Text Embedding Benchmark）是 embedding 领域的公认榜单，
 
 **本阶段推荐 `bge-m3`**，理由不是它分最高，而是：
 
-1. **568M 很小**，和 `qwen3.5:27b` 同时驻留毫无压力（回忆 ex10：27b 在 num_ctx=32768 下占 18GB，你只剩 4GB 余量——这时候 568M 和 8B 的差别是能不能跑）
+1. **体积小**（Ollama 上 1.2GB）。这一条在阶段 2 是硬约束而非偏好——见 [[03-RAG检索增强-MOC]] 的显存预算表：三个模型同驻时，可用的 19.78GB 里 embedding 每多占 1GB，KV cache 就少 16K 上下文（按 ex10 实测的 64 MB/1K 折算）
 2. **它同时产出 dense + sparse 向量**——第 7 课 [[混合检索]] 要用 BM25 风格的稀疏检索，
    bge-m3 一个模型全包了，省一套依赖
 3. Ollama 直接支持，`ollama pull bge-m3` 就完事
