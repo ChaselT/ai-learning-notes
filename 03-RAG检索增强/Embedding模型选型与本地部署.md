@@ -77,7 +77,7 @@ vectors = [d.embedding for d in resp.data]
 
 优点：接口和你阶段 1 用的一模一样，零学习成本；缺点：拿不到 sparse 向量（只给 dense）。
 
-**路线 B：sentence-transformers（本地直接加载）**
+**路线 B：sentence-transformers（⚠️ 本课不需要，第 7 课再装）**
 
 ```python
 from sentence_transformers import SentenceTransformer
@@ -90,6 +90,10 @@ vectors = model.encode(["文本1", "文本2"], normalize_embeddings=True)
 缺点：多一套依赖，模型要单独下载（注意 `HF_HOME` 已外置到 F 盘，见 [[硬件与环境]]）。
 
 **建议**：前期用 Ollama 跑通，第 7 课做混合检索时再换 sentence-transformers 拿 sparse。
+
+> [!warning] 现在别装 sentence-transformers
+> 它不在 `phase2-rag` 的依赖里，而且要另外下载 HuggingFace 版权重（几个 GB）。
+> 本课全程用 Ollama 就够——**等第 7 课真正需要 sparse 向量时再装**，否则只是白占磁盘。
 
 ### 4. 批量化：这是性能的分水岭
 
@@ -144,8 +148,22 @@ Ollama 的返回是否已归一化**要自己验一下**（算一下模长是不
 3. **截断验证**：构造一段超过模型上限的长文本，故意把关键信息放在**最后**，
    然后检索它——看看是不是真的搜不到。**这是本课最重要的一个实验**，
    因为它演示了一种完全静默的失败
-4. 至少再拉一个模型（`Qwen3-Embedding` 或 `gte-multilingual-base`）做对比：
-   同一组句子，两个模型的相似度矩阵有什么不同？分数分布呢？
+4. 再拉一个模型做对比：同一组句子，两个模型的相似度矩阵有什么不同？分数分布呢？
+
+   **推荐 `ollama pull qwen3-embedding:0.6b`**（2026-08-20 核对规格）：
+
+   | | bge-m3 | qwen3-embedding:0.6b |
+   |---|---|---|
+   | 体积 | 1.2 GB | **639 MB**（约一半） |
+   | 上下文 | 8K | **32K**（4 倍） |
+   | 参数量 | 566.7M | 0.6B |
+
+   **更小、窗口更大——那代价在哪？** 这正是本题要测出来的。
+   别只看"谁分高"，要看**分数分布**：有的模型任意两句都挤在 0.6 以上，
+   它的 0.7 和另一个模型的 0.7 完全不是一回事（回顾上一课的阈值标定 [[错题与复盘#E55]]）。
+
+   其他可直接 pull 的候选：`mxbai-embed-large` / `bge-large` / `nomic-embed-text`。
+   （`gte-multilingual-base` **Ollama 上没有**，需走 sentence-transformers）
 5. 记录你的选型决定和理由
 
 **完成标准**：批量/单条的耗时数字；截断实验能复现出"后半段搜不到"；
