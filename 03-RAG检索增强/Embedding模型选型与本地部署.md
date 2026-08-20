@@ -19,6 +19,17 @@ Java 类比：这相当于选数据库的**主键生成策略**。上线前改�
 
 ### 1. 怎么看 MTEB 榜单（以及为什么不能只看榜）
 
+**先收藏这几个地址**（2026-08-20 验证可访问）：
+
+| 用途 | 地址 |
+|---|---|
+| **MTEB 官方榜**（含英文 / 多语言 MMTEB / 中文 C-MTEB 分栏） | https://huggingface.co/spaces/mteb/leaderboard |
+| **Ollama 上能直接 pull 的 embedding 模型** | https://ollama.com/search?q=embedding |
+| bge-m3 官方模型卡（前缀、用法、FAQ） | https://huggingface.co/BAAI/bge-m3 |
+
+第一个是选型的**理论依据**，第二个是**你实际能用什么**——两者的交集才是你的候选池。
+榜首模型在 Ollama 上拉不到（如 `gte-multilingual-base`），对本阶段就等于不存在。
+
 MTEB（Massive Text Embedding Benchmark）是 embedding 领域的公认榜单，
 但有三个坑，不知道就会选错：
 
